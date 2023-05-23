@@ -23,12 +23,17 @@ fn extract_blocks(html: &str) -> Vec<String> {
         // When you download a Google Doc as HTML, the footnotes are turned into `[1]`.
         // In the reports I make, footnotes have the markup:
         //  <a something class="fn" something>1</a>
+        // and:
+        //  <a name="1">1</a>
         // which just gives the text content `1`.
         // So this will convert these into `[1]` instead.
         // Note that this expects that footnotes use an `a` tag with e.g. `id="fn-1"`.
-        static ref RE: Regex = Regex::new(r#"<a [^>]*id="fn-\d+"[^>]*>(?P<n>\d+)<\/a>"#).unwrap();
+        static ref FN_RE: Regex = Regex::new(r#"<a [^>]*id="fn-\d+"[^>]*>(?P<n>\d+)<\/a>"#).unwrap();
+        static ref FNA_RE: Regex = Regex::new(r#"<a name="\d+">(?P<n>\d+)<\/a>"#).unwrap();
     }
-    let html = RE.replace_all(html, "[$n]");
+    let html = FN_RE.replace_all(html, "[$n]");
+    let html = FNA_RE.replace_all(&html, "[$n] ");
+    let html = html.replace("⮌", "");
 
     let doc = Html::parse_document(&html);
     doc.select(&SELECTOR).filter_map(|el| {
